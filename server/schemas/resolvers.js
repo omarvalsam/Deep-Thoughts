@@ -1,30 +1,9 @@
 const { AuthenticationError } = require("apollo-server-express");
+const { User, Thought } = require("../models");
 const { signToken } = require("../utils/auth");
 
-const { User, Thought } = require("../models");
 const resolvers = {
   Query: {
-    thoughts: async (parent, { username }) => {
-      const params = username ? { username } : {};
-      return Thought.find(params).sort({ createdAt: -1 });
-    },
-    thought: async (parent, { _id }) => {
-      return Thought.findOne({ _id });
-    },
-    // get all users
-    users: async () => {
-      return User.find()
-        .select("-__v -password")
-        .populate("friends")
-        .populate("thoughts");
-    },
-    // get one user, by username
-    user: async (parent, { username }) => {
-      return User.findOne({ username })
-        .select("-__v -password")
-        .populate("friends")
-        .populate("thoughts");
-    },
     me: async (parent, args, context) => {
       if (context.user) {
         const userData = await User.findOne({ _id: context.user._id })
@@ -35,9 +14,29 @@ const resolvers = {
         return userData;
       }
 
-      throw new AuthenticationError("Not logged in.");
+      throw new AuthenticationError("Not logged in");
+    },
+    users: async () => {
+      return User.find()
+        .select("-__v -password")
+        .populate("thoughts")
+        .populate("friends");
+    },
+    user: async (parent, { username }) => {
+      return User.findOne({ username })
+        .select("-__v -password")
+        .populate("friends")
+        .populate("thoughts");
+    },
+    thoughts: async (parent, { username }) => {
+      const params = username ? { username } : {};
+      return Thought.find(params).sort({ createdAt: -1 });
+    },
+    thought: async (parent, { _id }) => {
+      return Thought.findOne({ _id });
     },
   },
+
   Mutation: {
     addUser: async (parent, args) => {
       const user = await User.create(args);
@@ -77,7 +76,7 @@ const resolvers = {
         return thought;
       }
 
-      throw new AuthenticationError(" You need to be logged in!");
+      throw new AuthenticationError("You need to be logged in!");
     },
     addReaction: async (parent, { thoughtId, reactionBody }, context) => {
       if (context.user) {
@@ -94,7 +93,7 @@ const resolvers = {
         return updatedThought;
       }
 
-      throw new AuthenticationError(" You need to be logged in!");
+      throw new AuthenticationError("You need to be logged in!");
     },
     addFriend: async (parent, { friendId }, context) => {
       if (context.user) {
@@ -107,7 +106,7 @@ const resolvers = {
         return updatedUser;
       }
 
-      throw new AuthenticationError(" You need to be logged in!");
+      throw new AuthenticationError("You need to be logged in!");
     },
   },
 };
